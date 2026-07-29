@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #6ee7f7;
+  --accent2: #a78bfa;
+  --glow: rgba(110, 231, 247, 0.15);
+}
+
+* {
+  cursor: none;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: #080810;
+  color: #e2e8f0;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-mono {
+  font-family: 'DM Mono', monospace;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #6ee7f7 0%, #a78bfa 50%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-2 {
+  background: linear-gradient(135deg, #a78bfa 0%, #6ee7f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow-cyan {
+  box-shadow: 0 0 30px rgba(110, 231, 247, 0.2), 0 0 60px rgba(110, 231, 247, 0.05);
+}
+
+.glow-purple {
+  box-shadow: 0 0 30px rgba(167, 139, 250, 0.2), 0 0 60px rgba(167, 139, 250, 0.05);
+}
+
+/* Noise texture */
+.noise::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #080810;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #6ee7f7, #a78bfa);
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 20s linear infinite; }
+.animate-gradient { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
+.animate-fadeInUp { animation: fadeInUp 0.6s ease forwards; }
+.animate-blink { animation: blink 1s step-end infinite; }
+
+/* Shimmer loading */
+.shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(110,231,247,0.05) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Section reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Grid backgrounds */
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(110, 231, 247, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 231, 247, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Progress bar */
+.progress-bar {
+  background: linear-gradient(90deg, #6ee7f7, #a78bfa);
+  box-shadow: 0 0 10px rgba(110, 231, 247, 0.5);
+}
+
+/* Tag styles */
+.tech-tag {
+  background: rgba(110, 231, 247, 0.08);
+  border: 1px solid rgba(110, 231, 247, 0.2);
+  color: #6ee7f7;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.tech-tag:hover {
+  background: rgba(110, 231, 247, 0.15);
+  border-color: rgba(110, 231, 247, 0.4);
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #6ee7f7, #a78bfa);
+  color: #080810;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  padding: 12px 32px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(110, 231, 247, 0.3); }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(110, 231, 247, 0.4);
+  color: #6ee7f7;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  padding: 11px 32px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+.btn-outline:hover {
+  background: rgba(110, 231, 247, 0.08);
+  border-color: #6ee7f7;
+  transform: translateY(-2px);
+}
+
+/* Custom cursor */
+.cursor-dot {
+  width: 8px;
+  height: 8px;
+  background: #6ee7f7;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  transition: transform 0.1s ease;
+}
+
+.cursor-ring {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(110, 231, 247, 0.5);
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  z-index: 99998;
+  transition: all 0.15s ease;
+}
+
+/* Section headings */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: #6ee7f7;
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.1;
+}
