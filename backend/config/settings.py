@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+import dj_database_url
 from decouple import Config, RepositoryEnv, config as default_config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -64,18 +65,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Database (PostgreSQL / SQLite fallback) ---
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+# --- Database (Neon PostgreSQL in production / SQLite fallback in dev) ---
+DATABASE_URL = env_config("DATABASE_URL", default=None)
+USE_SQLITE = env_config("USE_SQLITE", default=False, cast=bool)
 
-if env_config("USE_SQLITE", default=False, cast=bool):
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DATABASE_URL and DATABASE_URL.strip() and not USE_SQLITE:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL.strip(),
+            conn_max_age=env_config("CONN_MAX_AGE", default=600, cast=int),
+            conn_health_checks=True,
+            ssl_require=True,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
 
 # --- Auth ---
