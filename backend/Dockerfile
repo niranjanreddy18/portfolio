@@ -17,6 +17,8 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
+RUN chmod +x /app/start.sh
+
 EXPOSE 8000
 
-CMD gunicorn --bind 0.0.0.0:$PORT config.wsgi:application
+CMD ["/app/start.sh"]
