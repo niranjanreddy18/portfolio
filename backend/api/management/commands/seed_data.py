@@ -1,19 +1,16 @@
 """
 Management command: python manage.py seed_data
-Seeds the database with actual portfolio project data.
+Seeds the database with actual portfolio project data idempotently.
 """
 from django.core.management.base import BaseCommand
 from api.models import Project
 
 
 class Command(BaseCommand):
-    help = "Seeds the database with ShopSphere and ChatApp project data"
+    help = "Seeds the database with ShopSphere and ChatApp project data idempotently"
 
     def handle(self, *args, **kwargs):
         self.stdout.write("Seeding portfolio projects...")
-        
-        # Clear old sample projects
-        Project.objects.all().delete()
 
         projects_data = [
             {
@@ -59,6 +56,12 @@ class Command(BaseCommand):
         ]
 
         for p in projects_data:
-            Project.objects.create(**p)
+            slug = p["slug"]
+            obj, created = Project.objects.update_or_create(
+                slug=slug,
+                defaults=p,
+            )
+            status = "Created" if created else "Updated"
+            self.stdout.write(f"  [{status}] {obj.title} (slug: {obj.slug})")
 
         self.stdout.write(self.style.SUCCESS("Portfolio project data seeded successfully!"))

@@ -99,3 +99,35 @@ def test_contact_form_validation_failure(api_client):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert ContactMessage.objects.count() == 0
     assert len(mail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_seed_projects_and_api_projects_endpoint(api_client):
+    """Verify seed_data creates 2 projects idempotently and /api/projects/ returns them."""
+    from django.core.management import call_command
+    from api.models import Project
+
+    # Initial state
+    assert Project.objects.count() == 0
+
+    # First run: creates 2 projects
+    call_command("seed_data")
+    assert Project.objects.count() == 2
+
+    # Second run: idempotent update, still exactly 2 projects
+    call_command("seed_data")
+    assert Project.objects.count() == 2
+
+    # Verify GET /api/projects/
+    url = reverse("projects-list")
+    response = api_client.get(url)
+    assert response.status_code == status.HTTP_200_OK
+
+    data = response.json()
+    results = data["results"] if isinstance(data, dict) and "results" in data else data
+    assert len(results) == 2
+
+    slugs = {p["slug"] for p in results}
+    assert "shopsphere" in slugs
+    assert "chatapp" in slugs
+
