@@ -1,6 +1,7 @@
 import logging
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import EmailMessage
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework import generics, status
@@ -18,15 +19,11 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # Skills
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class SkillListView(generics.ListAPIView):
-    """
-    GET /api/skills/
-    Returns all visible skills, optionally filtered by ?category=frontend
-    """
     serializer_class = SkillSerializer
 
     def get_queryset(self):
@@ -39,7 +36,6 @@ class SkillListView(generics.ListAPIView):
     @method_decorator(cache_page(60 * 10))  # cache 10 min
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
-        # Group by category
         grouped = {}
         for skill in qs:
             grouped.setdefault(skill.category, []).append(
@@ -48,15 +44,11 @@ class SkillListView(generics.ListAPIView):
         return Response(grouped)
 
 
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # Projects
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class ProjectListView(generics.ListAPIView):
-    """
-    GET /api/projects/
-    Supports ?category=ai_ml and ?search=query and ?featured=true
-    """
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
@@ -75,18 +67,16 @@ class ProjectListView(generics.ListAPIView):
 
 
 class ProjectDetailView(generics.RetrieveAPIView):
-    """GET /api/projects/<slug>/"""
     serializer_class = ProjectSerializer
     lookup_field = "slug"
     queryset = Project.objects.filter(is_visible=True)
 
 
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # Experience
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class ExperienceListView(generics.ListAPIView):
-    """GET /api/experience/"""
     serializer_class = ExperienceSerializer
     queryset = Experience.objects.filter(is_visible=True)
 
@@ -95,43 +85,104 @@ class ExperienceListView(generics.ListAPIView):
         return super().list(*args, **kwargs)
 
 
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # Contact
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class ContactCreateView(generics.CreateAPIView):
     """
     POST /api/contact/
-    Saves the message and sends notification email.
+    Saves the message to the database and notifies admin via Gmail SMTP email.
     """
     serializer_class = ContactMessageSerializer
 
     def perform_create(self, serializer):
-        # Capture IP for spam prevention
+        # 1. Capture client IP address if available
         ip = (
             self.request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
             or self.request.META.get("REMOTE_ADDR")
         )
+
+        # 2. Save contact message to database first (preserving existing functionality)
         instance = serializer.save()
+
+        # 3. Send notification email to admin ONLY after database save succeeds
         self._send_notification(instance)
 
     def _send_notification(self, msg):
-        """Send email notification to site owner."""
+        """
+        Send email notification to admin using Gmail SMTP.
+        Wrapped in try/except so email issues do not rollback the saved message.
+        """
+        recipient = (
+            getattr(settings, "ADMIN_EMAIL", None)
+            or getattr(settings, "CONTACT_RECEIVER_EMAIL", None)
+            or getattr(settings, "EMAIL_HOST_USER", None)
+        )
+
+        if not recipient:
+            logger.warning(
+                "ADMIN_EMAIL is not configured. Skipping admin notification for contact message ID %s.",
+                getattr(msg, "id", None),
+            )
+            return
+
+        from_email = (
+            getattr(settings, "DEFAULT_FROM_EMAIL", None)
+            or getattr(settings, "EMAIL_HOST_USER", None)
+            or "noreply@portfolio.dev"
+        )
+
+        # Format date/time of submission
+        if getattr(msg, "created_at", None):
+            submission_time = timezone.localtime(msg.created_at).strftime("%B %d, %Y at %I:%M %p %Z")
+        else:
+            submission_time = timezone.localtime(timezone.now()).strftime("%B %d, %Y at %I:%M %p %Z")
+
+        # Sanitize subject line to prevent header injection
+        raw_subject = (getattr(msg, "subject", "") or "").strip()
+        single_line_subject = " ".join(raw_subject.split())
+        subject = f"New Portfolio Contact Message: {single_line_subject}" if single_line_subject else "New Portfolio Contact Message"
+
+        body = (
+            f"You have received a new contact message from your portfolio website.\n\n"
+            f"--------------------------------------------------\n"
+            f"Contact Details\n"
+            f"--------------------------------------------------\n"
+            f"Sender Name : {msg.name}\n"
+            f"Sender Email: {msg.email}\n"
+            f"Subject     : {msg.subject}\n"
+            f"Date / Time : {submission_time}\n\n"
+            f"--------------------------------------------------\n"
+            f"Message\n"
+            f"--------------------------------------------------\n"
+            f"{msg.message}\n\n"
+            f"--------------------------------------------------\n"
+            f"Note: Replying to this email will reply directly to {msg.email}."
+        )
+
         try:
-            send_mail(
-                subject=f"[Portfolio] New message from {msg.name}: {msg.subject}",
-                message=(
-                    f"From: {msg.name} <{msg.email}>\n"
-                    f"Subject: {msg.subject}\n\n"
-                    f"{msg.message}\n\n"
-                    f"---\nReply to: {msg.email}"
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],
-                fail_silently=True,
+            email = EmailMessage(
+                subject=subject,
+                body=body,
+                from_email=from_email,
+                to=[recipient],
+                reply_to=[msg.email],
+            )
+            email.send(fail_silently=False)
+            logger.info(
+                "Admin notification email sent successfully for contact message ID %s to %s",
+                getattr(msg, "id", None),
+                recipient,
             )
         except Exception as exc:
-            logger.warning("Email send failed: %s", exc)
+            # Crucial: Log error, but do NOT raise or rollback the database record
+            logger.error(
+                "Failed to send admin notification email for contact message ID %s: %s",
+                getattr(msg, "id", None),
+                exc,
+                exc_info=True,
+            )
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -143,11 +194,10 @@ class ContactCreateView(generics.CreateAPIView):
         )
 
 
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # Health check
-# ──────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 @api_view(["GET"])
 def health_check(request):
-    """GET /api/health/ — quick availability check."""
     return Response({"status": "ok", "version": "1.0.0"})

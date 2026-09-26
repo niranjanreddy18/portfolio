@@ -1,17 +1,21 @@
-"""
-Django settings for Portfolio backend.
-Split into base/dev/prod via DJANGO_SETTINGS_MODULE.
-"""
+# Django settings for Portfolio backend.
 import os
 from pathlib import Path
 from datetime import timedelta
+from decouple import Config, RepositoryEnv, config as default_config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load configuration: priority:
+# 1. System environment variables (Render, Docker, etc.)
+# 2. .env file in BASE_DIR (local dev)
+_env_file = BASE_DIR / ".env"
+env_config = Config(RepositoryEnv(str(_env_file))) if _env_file.exists() else default_config
+
 # --- Security ---
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
-DEBUG = os.environ.get("DEBUG", "True") == "True"
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+SECRET_KEY = env_config("SECRET_KEY", default="dev-secret-key-change-in-production")
+DEBUG = env_config("DEBUG", default=True, cast=bool)
+ALLOWED_HOSTS = [h.strip() for h in env_config("ALLOWED_HOSTS", default="localhost,127.0.0.1,testserver").split(",") if h.strip()]
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -60,16 +64,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Database (PostgreSQL) ---
+# --- Database (PostgreSQL / SQLite fallback) ---
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
-# --- SQLite fallback for dev without PG ---
-if os.environ.get("USE_SQLITE", "False") == "True":
+if env_config("USE_SQLITE", default=False, cast=bool):
     DATABASES["default"] = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
@@ -116,24 +119,45 @@ REST_FRAMEWORK = {
 }
 
 # --- CORS ---
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173"
-).split(",")
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in env_config(
+        "CORS_ALLOWED_ORIGINS",
+        default="http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if origin.strip()
+]
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development!
 
-# --- Email ---
-EMAIL_BACKEND = os.environ.get(
+# --- Email Configuration (Gmail SMTP) ---
+EMAIL_BACKEND = env_config(
     "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend"
+    default="django.core.mail.backends.smtp.EmailBackend",
 )
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@yourportfolio.dev")
-CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", "hello@yourname.dev")
+EMAIL_HOST = env_config("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = env_config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = env_config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_HOST_USER = env_config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env_config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_TIMEOUT = env_config("EMAIL_TIMEOUT", default=10, cast=int)
+
+# Admin recipient email for portfolio contact notifications
+ADMIN_EMAIL = env_config(
+    "ADMIN_EMAIL",
+    default=env_config(
+        "CONTACT_RECEIVER_EMAIL",
+        default=env_config("CONTACT_EMAIL", default=EMAIL_HOST_USER)
+    ),
+)
+
+DEFAULT_FROM_EMAIL = env_config(
+    "DEFAULT_FROM_EMAIL",
+    default=EMAIL_HOST_USER or "noreply@niranjan.dev",
+)
+
+# Kept for backward compatibility
+CONTACT_RECEIVER_EMAIL = ADMIN_EMAIL
+CONTACT_EMAIL = ADMIN_EMAIL
 
 # --- Logging ---
 LOGGING = {
@@ -149,7 +173,12 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+            "level": env_config("DJANGO_LOG_LEVEL", default="INFO"),
+            "propagate": False,
+        },
+        "api": {
+            "handlers": ["console"],
+            "level": "INFO",
             "propagate": False,
         },
     },

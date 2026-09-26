@@ -32,6 +32,8 @@ class Project(models.Model):
     """A portfolio project."""
 
     CATEGORY_CHOICES = [
+        ("full_stack", "Full Stack"),
+        ("real_time", "Real Time"),
         ("ai_ml", "AI/ML"),
         ("saas", "SaaS"),
         ("api", "API"),

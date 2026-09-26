@@ -1,144 +1,137 @@
-import { useState, useEffect } from "react";
-
-const roles = [
-  "Full Stack Developer",
-  "Django & React Engineer",
-  "AI Enthusiast",
-  "Problem Solver",
-];
-
 export default function Hero() {
-  const [roleIdx, setRoleIdx] = useState(0);
-  const [displayed, setDisplayed] = useState("");
-  const [typing, setTyping] = useState(true);
-
-  // Typewriter effect
-  useEffect(() => {
-    const role = roles[roleIdx];
-    let i = typing ? 0 : role.length;
-    let timer;
-
-    if (typing) {
-      timer = setInterval(() => {
-        setDisplayed(role.slice(0, i + 1));
-        i++;
-        if (i > role.length) {
-          clearInterval(timer);
-          setTimeout(() => setTyping(false), 2000);
-        }
-      }, 65);
-    } else {
-      timer = setInterval(() => {
-        setDisplayed(role.slice(0, i - 1));
-        i--;
-        if (i <= 0) {
-          clearInterval(timer);
-          setRoleIdx((prev) => (prev + 1) % roles.length);
-          setTyping(true);
-        }
-      }, 35);
-    }
-    return () => clearInterval(timer);
-  }, [roleIdx, typing]);
-
   return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Background effects */}
-      <div className="absolute inset-0 grid-bg" />
+    <section id="home" className="relative min-h-[90vh] flex items-center justify-center pt-28 pb-16 overflow-hidden">
+      {/* Background ambient lighting and grid */}
+      <div className="absolute inset-0 grid-bg opacity-75 pointer-events-none" />
+      <div className="absolute top-1/4 left-1/6 w-[450px] h-[450px] rounded-full bg-sky-500/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/6 w-[400px] h-[400px] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none" />
 
-      {/* Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full bg-cyan-400/5 blur-[120px] animate-pulse-glow pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-violet-500/5 blur-[100px] animate-pulse-glow pointer-events-none" style={{ animationDelay: '1.5s' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-pink-500/3 blur-[80px] pointer-events-none" />
-
-      {/* Rotating ring */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-white/[0.02] animate-spin-slow pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-cyan-400/[0.04] animate-spin-slow pointer-events-none" style={{ animationDirection: 'reverse', animationDuration: '15s' }} />
-
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full border border-cyan-400/20 mb-8 animate-fadeInUp">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="font-mono text-cyan-400/80 text-xs tracking-widest">OPEN TO OPPORTUNITIES</span>
-        </div>
-
-        {/* Name */}
-        <h1 className="font-display font-black text-6xl md:text-8xl lg:text-9xl leading-none mb-4 animate-fadeInUp" style={{ animationDelay: '0.1s', opacity: 0, animationFillMode: 'forwards' }}>
-          <span className="text-white">Niranjan</span>
-          <br />
-          <span className="gradient-text">Reddy</span>
-        </h1>
-
-        {/* Typewriter */}
-        <div className="h-12 flex items-center justify-center mb-6 animate-fadeInUp" style={{ animationDelay: '0.2s', opacity: 0, animationFillMode: 'forwards' }}>
-          <span className="font-mono text-xl md:text-2xl text-white/50">
-            {"// "}
-            <span className="text-cyan-400">{displayed}</span>
-            <span className="animate-blink text-cyan-400">|</span>
-          </span>
-        </div>
-
-        {/* Bio */}
-        <p className="text-white/40 text-lg max-w-2xl mx-auto leading-relaxed mb-12 animate-fadeInUp" style={{ animationDelay: '0.3s', opacity: 0, animationFillMode: 'forwards' }}>
-          I build full-stack web applications with Django and React, and I'm on a journey to become an AI/LLM engineer.
-          Turning ideas into production-ready digital products.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 animate-fadeInUp" style={{ animationDelay: '0.4s', opacity: 0, animationFillMode: 'forwards' }}>
-          <a href="#projects" className="btn-primary relative z-10">
-            <span className="relative z-10">View My Work</span>
-          </a>
-          <a href="#contact" className="btn-outline">
-            Let's Talk →
-          </a>
-        </div>
-
-        {/* Social links */}
-        {/* TODO: Replace href values with your actual profile URLs */}
-        <div className="flex items-center justify-center gap-6 animate-fadeInUp" style={{ animationDelay: '0.5s', opacity: 0, animationFillMode: 'forwards' }}>
-          {[
-            { label: "GitHub", href: "https://github.com/YOUR_GITHUB_USERNAME", icon: "GH" },
-            { label: "LinkedIn", href: "https://linkedin.com/in/YOUR_LINKEDIN_ID", icon: "LI" },
-            { label: "Email", href: "mailto:YOUR_EMAIL@gmail.com", icon: "✉" },
-          ].map((s) => (
-            <a
-              key={s.label}
-              href={s.href}
-              target="_blank"
-              rel="noreferrer"
-              className="w-10 h-10 glass-strong rounded-lg flex items-center justify-center border border-white/10 hover:border-cyan-400/40 hover:text-cyan-400 text-white/40 transition-all hover:-translate-y-1 font-mono text-xs font-bold"
-              aria-label={s.label}
-            >
-              {s.icon}
-            </a>
-          ))}
-          <span className="w-12 h-px bg-white/10" />
-          {/* TODO: Replace @YOUR_GITHUB_USERNAME with your actual GitHub handle */}
-          <span className="font-mono text-xs text-white/20">@YOUR_GITHUB_USERNAME</span>
-        </div>
-
-        {/* Scroll hint */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-float">
-          <span className="font-mono text-xs text-white/20 tracking-widest">SCROLL</span>
-          <div className="w-px h-12 bg-gradient-to-b from-cyan-400/40 to-transparent" />
-        </div>
-      </div>
-
-      {/* Stats bar */}
-      <div className="absolute bottom-16 left-0 right-0 hidden lg:flex justify-center">
-        <div className="flex gap-16">
-          {[
-            { n: "1+", label: "Production Project" },
-            { n: "3+", label: "Technologies" },
-            { n: "∞", label: "Learning Spirit" },
-            { n: "2025", label: "Ready to Contribute" },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-display font-black text-2xl gradient-text">{s.n}</div>
-              <div className="font-mono text-xs text-white/30">{s.label}</div>
+      <div className="relative z-10 max-w-6xl mx-auto px-6 w-full">
+        <div className="grid lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Left Column: Hero Text & Actions */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Status Pill */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-400/20 text-sky-400 font-mono text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+              <span>Full Stack Developer</span>
             </div>
-          ))}
+
+            {/* Main Headline */}
+            <div>
+              <h1 className="font-display font-extrabold text-4xl sm:text-6xl lg:text-7xl text-white tracking-tight leading-tight">
+                Niranjan <span className="gradient-text">Reddy</span>
+              </h1>
+              <p className="font-display font-semibold text-xl sm:text-2xl text-slate-300 mt-2">
+                Full Stack Developer
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-3 max-w-xl">
+              <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
+                I build full-stack web applications using Django, Django REST Framework, React, and PostgreSQL.
+              </p>
+              <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+                Computer Science &amp; Engineering student at <span className="text-slate-200 font-medium">RGUKT RK Valley</span>.
+              </p>
+            </div>
+
+            {/* Hero CTAs */}
+            <div className="flex flex-wrap gap-4 pt-2">
+              <a href="#projects" className="btn-primary text-sm py-3 px-6">
+                View Projects
+              </a>
+              <a
+                href="/resume.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="btn-outline text-sm py-3 px-6 inline-flex items-center gap-1.5"
+              >
+                <span>Resume</span>
+                <span className="text-xs">↗</span>
+              </a>
+              <a href="#contact" className="btn-outline text-sm py-3 px-6 border-slate-700/80 hover:border-sky-400/40">
+                Contact Me
+              </a>
+            </div>
+          </div>
+
+          {/* Right Column: Information Card */}
+          <div className="lg:col-span-5">
+            <div className="glass-card p-6 sm:p-7 space-y-5 border border-slate-800/80 shadow-xl bg-slate-900/50">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-sky-400" />
+                  <span className="font-display font-bold text-white text-base">Developer Profile</span>
+                </div>
+                <span className="font-mono text-xs text-sky-400 bg-sky-400/10 px-2.5 py-1 rounded border border-sky-400/20">
+                  CSE
+                </span>
+              </div>
+
+              {/* Education info */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-start text-sm">
+                  <span className="text-slate-400 font-medium">Degree</span>
+                  <span className="text-slate-200 font-semibold text-right">B.Tech in CSE</span>
+                </div>
+
+                <div className="flex justify-between items-start text-sm">
+                  <span className="text-slate-400 font-medium">Institution</span>
+                  <span className="text-slate-200 font-semibold text-right">RGUKT RK Valley</span>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-400 font-medium">Expected Graduation</span>
+                  <span className="text-slate-200 font-semibold">2028</span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800 space-y-2.5">
+                <div className="font-mono text-xs text-slate-400 uppercase tracking-wider mb-2">
+                  Quick Contacts &amp; Links
+                </div>
+
+                <a
+                  href="mailto:niranjanreddynakkala@gmail.com"
+                  className="flex items-center justify-between text-xs font-mono text-slate-300 hover:text-sky-400 p-2 rounded bg-slate-800/40 hover:bg-slate-800/80 transition-colors"
+                >
+                  <span className="truncate">Email: niranjanreddynakkala@gmail.com</span>
+                  <span className="ml-2 text-slate-400">✉</span>
+                </a>
+
+                <a
+                  href="https://github.com/niranjanreddy18"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between text-xs font-mono text-slate-300 hover:text-sky-400 p-2 rounded bg-slate-800/40 hover:bg-slate-800/80 transition-colors"
+                >
+                  <span>GitHub: github.com/niranjanreddy18</span>
+                  <span className="ml-2 text-slate-400">↗</span>
+                </a>
+
+                <a
+                  href="https://linkedin.com/in/niranjanreddy18"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between text-xs font-mono text-slate-300 hover:text-sky-400 p-2 rounded bg-slate-800/40 hover:bg-slate-800/80 transition-colors"
+                >
+                  <span>LinkedIn: linkedin.com/in/niranjanreddy18</span>
+                  <span className="ml-2 text-slate-400">↗</span>
+                </a>
+
+                <a
+                  href="#home"
+                  className="flex items-center justify-between text-xs font-mono text-slate-300 hover:text-sky-400 p-2 rounded bg-slate-800/40 hover:bg-slate-800/80 transition-colors"
+                >
+                  <span>Portfolio: niranjan.dev</span>
+                  <span className="ml-2 text-slate-400">★</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
