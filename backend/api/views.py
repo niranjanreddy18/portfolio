@@ -7,6 +7,8 @@ from django.views.decorators.cache import cache_page
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+import socket
+from django.http import JsonResponse
 
 from .models import Skill, Project, Experience, ContactMessage
 from .serializers import (
@@ -201,3 +203,27 @@ class ContactCreateView(generics.CreateAPIView):
 @api_view(["GET"])
 def health_check(request):
     return Response({"status": "ok", "version": "1.0.0"})
+
+
+
+def test_smtp_connection(request):
+    try:
+        socket.create_connection(
+            (settings.EMAIL_HOST, settings.EMAIL_PORT),
+            timeout=10,
+        )
+
+        return JsonResponse({
+            "status": "success",
+            "message": "SMTP server is reachable",
+            "host": settings.EMAIL_HOST,
+            "port": settings.EMAIL_PORT,
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            "status": "failed",
+            "error": str(e),
+            "host": settings.EMAIL_HOST,
+            "port": settings.EMAIL_PORT,
+        })

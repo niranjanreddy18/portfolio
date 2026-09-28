@@ -1,12 +1,5 @@
 from django.urls import path
-from .views import (
-    SkillListView,
-    ProjectListView,
-    ProjectDetailView,
-    ExperienceListView,
-    ContactCreateView,
-    health_check,
-)
+from .views import *
 
 urlpatterns = [
     # Health
@@ -24,4 +17,5 @@ urlpatterns = [
 
     # Contact
     path("contact/", ContactCreateView.as_view(), name="contact-create"),
+    path("test-smtp/", test_smtp_connection),
 ]
