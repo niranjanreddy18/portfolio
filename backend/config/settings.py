@@ -137,30 +137,22 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development!
 
-# --- Email Configuration (Gmail SMTP) ---
-EMAIL_BACKEND = env_config(
-    "EMAIL_BACKEND",
-    default="django.core.mail.backends.smtp.EmailBackend",
-)
-EMAIL_HOST = env_config("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT = env_config("EMAIL_PORT", default=587, cast=int)
-EMAIL_USE_TLS = env_config("EMAIL_USE_TLS", default=True, cast=bool)
-EMAIL_HOST_USER = env_config("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env_config("EMAIL_HOST_PASSWORD", default="")
-EMAIL_TIMEOUT = env_config("EMAIL_TIMEOUT", default=10, cast=int)
+# --- Email Configuration (Resend API) ---
+RESEND_API_KEY = env_config("RESEND_API_KEY", default="")
 
 # Admin recipient email for portfolio contact notifications
 ADMIN_EMAIL = env_config(
     "ADMIN_EMAIL",
     default=env_config(
         "CONTACT_RECEIVER_EMAIL",
-        default=env_config("CONTACT_EMAIL", default=EMAIL_HOST_USER)
+        default=env_config("CONTACT_EMAIL", default=""),
     ),
 )
 
+# Resend requires a verified sender address or onboarding@resend.dev during testing
 DEFAULT_FROM_EMAIL = env_config(
     "DEFAULT_FROM_EMAIL",
-    default=EMAIL_HOST_USER or "noreply@niranjan.dev",
+    default="onboarding@resend.dev",
 )
 
 # Kept for backward compatibility

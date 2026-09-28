@@ -212,14 +212,14 @@ Edit `frontend/src/components/Skills.jsx` → `skillGroups` array, or seed via a
 }
 ```
 
-### 5. Email Notifications
-Set in `backend/.env`:
+### 5. Email Notifications (Resend API)
+Set in `backend/.env` (or Render Environment Variables):
 ```env
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST_USER=your@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
-CONTACT_EMAIL=hello@yourname.dev
+RESEND_API_KEY=re_your_api_key_here
+DEFAULT_FROM_EMAIL=onboarding@resend.dev
+ADMIN_EMAIL=your-email@gmail.com
 ```
+> **Note:** For initial testing without a custom domain, use `DEFAULT_FROM_EMAIL=onboarding@resend.dev` (Resend delivers to the email registered on your Resend account). In production with a verified domain, use e.g. `contact@yourdomain.com`.
 
 ---
 

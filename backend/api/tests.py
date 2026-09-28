@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch
 from django.urls import reverse
-from django.core import mail
 from rest_framework import status
 from rest_framework.test import APIClient
 from api.models import ContactMessage
@@ -13,11 +12,13 @@ def api_client():
 
 
 @pytest.mark.django_db
-def test_contact_form_saves_to_database_and_sends_email(api_client, settings):
+@patch("resend.Emails.send")
+def test_contact_form_saves_to_database_and_sends_email(mock_resend_send, api_client, settings):
     settings.ADMIN_EMAIL = "admin@example.com"
-    settings.EMAIL_HOST_USER = "sender@gmail.com"
-    settings.DEFAULT_FROM_EMAIL = "sender@gmail.com"
-    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.RESEND_API_KEY = "re_test_key"
+    settings.DEFAULT_FROM_EMAIL = "onboarding@resend.dev"
+
+    mock_resend_send.return_value = {"id": "email_12345"}
 
     payload = {
         "name": "Jane Doe",
@@ -41,24 +42,27 @@ def test_contact_form_saves_to_database_and_sends_email(api_client, settings):
     assert saved.subject == "Collaboration Inquiry"
     assert saved.message == payload["message"]
 
-    # 3. Email Notification Check
-    assert len(mail.outbox) == 1
-    sent_mail = mail.outbox[0]
-    assert "New Portfolio Contact Message: Collaboration Inquiry" in sent_mail.subject
-    assert "admin@example.com" in sent_mail.to
-    assert sent_mail.reply_to == ["janedoe@example.com"]
-    assert "Jane Doe" in sent_mail.body
-    assert "janedoe@example.com" in sent_mail.body
-    assert "Collaboration Inquiry" in sent_mail.body
-    assert payload["message"] in sent_mail.body
-    assert "Date / Time :" in sent_mail.body
+    # 3. Resend Email Notification Check
+    mock_resend_send.assert_called_once()
+    call_args = mock_resend_send.call_args[0][0]
+    assert call_args["to"] == ["admin@example.com"]
+    assert call_args["from"] == "onboarding@resend.dev"
+    assert call_args["reply_to"] == "janedoe@example.com"
+    assert "New Portfolio Contact Message: Collaboration Inquiry" in call_args["subject"]
+    assert "Jane Doe" in call_args["text"]
+    assert "janedoe@example.com" in call_args["text"]
+    assert "Collaboration Inquiry" in call_args["text"]
+    assert payload["message"] in call_args["text"]
+    assert "Date / Time :" in call_args["text"]
 
 
 @pytest.mark.django_db
-def test_contact_form_persists_even_if_email_fails(api_client, settings):
-    """If SMTP fails, contact message must NOT be rolled back or lost."""
+@patch("resend.Emails.send", side_effect=Exception("Resend API Connection Error"))
+def test_contact_form_persists_even_if_email_fails(mock_resend_send, api_client, settings):
+    """If Resend API fails, contact message must NOT be rolled back or lost."""
     settings.ADMIN_EMAIL = "admin@example.com"
-    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    settings.RESEND_API_KEY = "re_test_key"
+    settings.DEFAULT_FROM_EMAIL = "onboarding@resend.dev"
 
     payload = {
         "name": "Alex Smith",
@@ -68,10 +72,7 @@ def test_contact_form_persists_even_if_email_fails(api_client, settings):
     }
 
     url = reverse("contact-create")
-
-    # Mock send() to raise an exception simulating SMTP connection/auth failure
-    with patch("django.core.mail.EmailMessage.send", side_effect=Exception("SMTP Connection Error")):
-        response = api_client.post(url, payload, format="json")
+    response = api_client.post(url, payload, format="json")
 
     # Message must still be returned as 201 Created to frontend
     assert response.status_code == status.HTTP_201_CREATED
@@ -84,7 +85,30 @@ def test_contact_form_persists_even_if_email_fails(api_client, settings):
 
 
 @pytest.mark.django_db
-def test_contact_form_validation_failure(api_client):
+@patch("resend.Emails.send")
+def test_contact_form_without_resend_api_key_still_saves(mock_resend_send, api_client, settings):
+    """If RESEND_API_KEY is unset, contact message is saved without crashing."""
+    settings.ADMIN_EMAIL = "admin@example.com"
+    settings.RESEND_API_KEY = ""
+
+    payload = {
+        "name": "Sam Taylor",
+        "email": "sam@example.com",
+        "subject": "General Query",
+        "message": "Testing contact form when RESEND_API_KEY is not configured.",
+    }
+
+    url = reverse("contact-create")
+    response = api_client.post(url, payload, format="json")
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert ContactMessage.objects.filter(email="sam@example.com").exists()
+    mock_resend_send.assert_not_called()
+
+
+@pytest.mark.django_db
+@patch("resend.Emails.send")
+def test_contact_form_validation_failure(mock_resend_send, api_client):
     """Invalid data should return 400 and not send email or save."""
     payload = {
         "name": "A",  # Too short (< 2 chars)
@@ -98,7 +122,7 @@ def test_contact_form_validation_failure(api_client):
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert ContactMessage.objects.count() == 0
-    assert len(mail.outbox) == 0
+    mock_resend_send.assert_not_called()
 
 
 @pytest.mark.django_db

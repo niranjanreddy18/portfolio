@@ -11,8 +11,8 @@ dj-database-url==3.1.2
 whitenoise==6.7.0
 gunicorn==23.0.0
 
-# Email (optional: SendGrid)
-# sendgrid==6.11.0
+# Email (Resend API)
+resend==2.48.0
 
 # Environment management
 python-decouple==3.8

@@ -1,14 +1,12 @@
 import logging
+import resend
 from django.conf import settings
-from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-import socket
-from django.http import JsonResponse
 
 from .models import Skill, Project, Experience, ContactMessage
 from .serializers import (
@@ -52,7 +50,6 @@ class SkillListView(generics.ListAPIView):
 
 class ProjectListView(generics.ListAPIView):
     serializer_class = ProjectSerializer
-
     def get_queryset(self):
         qs = Project.objects.filter(is_visible=True)
         category = self.request.query_params.get("category")
@@ -94,7 +91,7 @@ class ExperienceListView(generics.ListAPIView):
 class ContactCreateView(generics.CreateAPIView):
     """
     POST /api/contact/
-    Saves the message to the database and notifies admin via Gmail SMTP email.
+    Saves the message to the database and notifies admin via Resend Email API.
     """
     serializer_class = ContactMessageSerializer
 
@@ -113,13 +110,12 @@ class ContactCreateView(generics.CreateAPIView):
 
     def _send_notification(self, msg):
         """
-        Send email notification to admin using Gmail SMTP.
+        Send email notification to admin using the Resend Email API.
         Wrapped in try/except so email issues do not rollback the saved message.
         """
         recipient = (
             getattr(settings, "ADMIN_EMAIL", None)
             or getattr(settings, "CONTACT_RECEIVER_EMAIL", None)
-            or getattr(settings, "EMAIL_HOST_USER", None)
         )
 
         if not recipient:
@@ -129,10 +125,17 @@ class ContactCreateView(generics.CreateAPIView):
             )
             return
 
+        api_key = getattr(settings, "RESEND_API_KEY", "")
+        if not api_key:
+            logger.warning(
+                "RESEND_API_KEY is not configured. Skipping admin notification for contact message ID %s.",
+                getattr(msg, "id", None),
+            )
+            return
+
         from_email = (
             getattr(settings, "DEFAULT_FROM_EMAIL", None)
-            or getattr(settings, "EMAIL_HOST_USER", None)
-            or "noreply@portfolio.dev"
+            or "onboarding@resend.dev"
         )
 
         # Format date/time of submission
@@ -164,23 +167,25 @@ class ContactCreateView(generics.CreateAPIView):
         )
 
         try:
-            email = EmailMessage(
-                subject=subject,
-                body=body,
-                from_email=from_email,
-                to=[recipient],
-                reply_to=[msg.email],
-            )
-            email.send(fail_silently=False)
+            resend.api_key = api_key
+            params: resend.Emails.SendParams = {
+                "from": from_email,
+                "to": [recipient],
+                "subject": subject,
+                "text": body,
+                "reply_to": msg.email,
+            }
+            email_resp = resend.Emails.send(params)
             logger.info(
-                "Admin notification email sent successfully for contact message ID %s to %s",
+                "Admin notification email sent successfully via Resend for contact message ID %s to %s (ID: %s)",
                 getattr(msg, "id", None),
                 recipient,
+                email_resp.get("id") if isinstance(email_resp, dict) else email_resp,
             )
         except Exception as exc:
             # Crucial: Log error, but do NOT raise or rollback the database record
             logger.error(
-                "Failed to send admin notification email for contact message ID %s: %s",
+                "Failed to send admin notification email via Resend for contact message ID %s: %s",
                 getattr(msg, "id", None),
                 exc,
                 exc_info=True,
@@ -206,24 +211,3 @@ def health_check(request):
 
 
 
-def test_smtp_connection(request):
-    try:
-        socket.create_connection(
-            (settings.EMAIL_HOST, settings.EMAIL_PORT),
-            timeout=10,
-        )
-
-        return JsonResponse({
-            "status": "success",
-            "message": "SMTP server is reachable",
-            "host": settings.EMAIL_HOST,
-            "port": settings.EMAIL_PORT,
-        })
-
-    except Exception as e:
-        return JsonResponse({
-            "status": "failed",
-            "error": str(e),
-            "host": settings.EMAIL_HOST,
-            "port": settings.EMAIL_PORT,
-        })
