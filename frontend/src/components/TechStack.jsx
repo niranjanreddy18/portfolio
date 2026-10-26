@@ -23,8 +23,7 @@ const techCategories = [
       "PostgreSQL",
       "MySQL",
       "SQLite",
-      "Redis",
-      "Database Design",
+
     ],
   },
   {

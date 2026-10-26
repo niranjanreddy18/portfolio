@@ -25,23 +25,6 @@ async function handleResponse(response) {
   }
 }
 
-/**
- * GET /api/projects/
- * Fetch list of portfolio projects from Django REST API
- */
-export async function getProjects() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/projects/`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-      },
-    });
-    return await handleResponse(response);
-  } catch (error) {
-    throw new Error(error.message || "Network error: Unable to connect to server.");
-  }
-}
 
 /**
  * POST /api/contact/
